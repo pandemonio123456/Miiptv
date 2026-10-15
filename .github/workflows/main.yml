@@ -22,8 +22,8 @@ jobs:
           cd "$(dirname "$(find proyecto -name settings.gradle.kts | head -n 1)")"
           gradle assembleDebug --no-daemon
           mkdir -p "$GITHUB_WORKSPACE/salida"
-          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/salida/"
+          cp app/build/outputs/apk/*/debug/*.apk "$GITHUB_WORKSPACE/salida/"
       - uses: actions/upload-artifact@v4
         with:
           name: MiIPTV-apk
-          path: salida/app-debug.apk
+          path: salida/
