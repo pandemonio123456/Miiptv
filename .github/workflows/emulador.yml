@@ -1,0 +1,49 @@
+name: Prueba en emulador
+on:
+  workflow_dispatch:
+
+jobs:
+  prueba:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.7
+
+      - name: Descomprimir y compilar la version mas reciente
+        run: |
+          mkdir proyecto
+          unzip -q "$(ls MiIPTV*.zip | sort -V | tail -n 1)" -d proyecto
+          cd "$(dirname "$(find proyecto -name settings.gradle.kts | head -n 1)")"
+          gradle assembleDebug --no-daemon
+
+      - name: Activar aceleracion (KVM)
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Ejecutar prueba en emulador
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          disable-animations: true
+          script: bash scripts/prueba.sh
+
+      - name: Guardar registros de la prueba
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: registros-prueba
+          path: salida/
